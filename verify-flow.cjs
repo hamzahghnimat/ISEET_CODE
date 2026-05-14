@@ -1,0 +1,34 @@
+const { chromium } = require('playwright');
+
+(async () => {
+  const browser = await chromium.launch({ headless: true, channel: 'msedge' });
+  const page = await browser.newPage({ viewport: { width: 1280, height: 1080 } });
+  page.setDefaultTimeout(5000);
+  page.on('pageerror', (err) => console.log('PAGEERROR', err.message));
+  await page.goto('http://127.0.0.1:8010', { waitUntil: 'networkidle', timeout: 30000 });
+  console.log('home');
+  await page.getByRole('button', { name: 'Talk to Us' }).click();
+  console.log('talk');
+  await page.locator('input[name=name]').fill('Nadia Khaled');
+  await page.locator('input[name=organization]').fill('Jordan Digital Lab');
+  await page.locator('select[name=sector]').selectOption('Technology');
+  await page.locator('select[name=country]').selectOption('Jordan');
+  await page.locator('input[name=email]').fill(`nadia${Date.now()}@example.com`);
+  await page.locator('input[name=phone]').fill('+962 799 111 222');
+  await page.getByRole('button', { name: 'Submit to CRM System' }).click();
+  await page.locator('#leadSuccess.show').waitFor({ state: 'visible' });
+  console.log(await page.locator('#leadSuccess').innerText());
+  await page.goto('http://127.0.0.1:8010', { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: 'CRM Access' }).click();
+  await page.getByRole('button', { name: 'Login to CRM' }).click();
+  await page.getByText('CRM - Employee').waitFor({ state: 'visible' });
+  console.log('employee dashboard');
+  await page.locator('button').filter({ hasText: 'John Smith - Tech Corp' }).click();
+  await page.getByText('Email Chat').click();
+  await page.locator('textarea[name=message]').fill('Follow-up message from verification.');
+  await page.getByRole('button', { name: 'Send' }).click();
+  await page.getByText('Follow-up message from verification.').waitFor({ state: 'visible' });
+  await page.screenshot({ path: 'iseet-crm-flow.png', fullPage: true });
+  console.log('flow ok');
+  await browser.close();
+})();
