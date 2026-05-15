@@ -1,5 +1,5 @@
 <?php
-
+//.....
 namespace App\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
@@ -42,11 +42,7 @@ class CrmController extends Controller
             ->first();
 
         if (! $user || ! Hash::check($data['password'], $user->password)) {
-            if ($data['username'] !== 'demo') {
-                return response()->json(['message' => 'Invalid credentials. Try demo / any password.'], 422);
-            }
-
-            $user = DB::table('crm_users')->where('role', $data['role'])->first();
+            return response()->json(['message' => 'Invalid credentials. Use Manager@gmail.com (Manager) or Employee@gmail.com (Employee).'], 422);
         }
 
         return response()->json([

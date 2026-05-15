@@ -121,10 +121,10 @@ function login() {
             <h1>CRM System</h1><p class="subtitle">Login to access customer management</p>
             <form id="loginForm">
                 <label>Role</label><div class="tabs"><button type="button" class="tab ${state.roleChoice === 'employee' ? 'active' : ''}" onclick="setRole('employee')">Employee</button><button type="button" class="tab ${state.roleChoice === 'manager' ? 'active' : ''}" onclick="setRole('manager')">Manager</button></div>
-                <label>Username</label><input name="username" value="demo" required>
-                <label>Password</label><input name="password" type="password" value="demo" required>
+                <label>Email Address</label><input name="username" value="Manager@gmail.com" required>
+                <label>Password</label><input name="password" type="password" value="Manager" required>
                 <button class="btn" style="width:100%;margin-top:24px">Login to CRM</button>
-                <p class="hint" style="text-align:center">Demo credentials: Username: demo / Password: any</p>
+                <p class="hint" style="text-align:center">Demo: Manager@gmail.com (Manager) or Employee@gmail.com (Employee)</p>
             </form>
         </section></main>`;
 }
@@ -140,19 +140,36 @@ function crmHeader(title, actions = '') {
 }
 
 function employeeDashboard() {
+    const myClients = state.data.clients.filter(c => Number(c.assigned_employee_id) === Number(state.user.id));
+    const myMeetings = state.data.scheduledMeetings.filter(m => Number(m.employee_id) === Number(state.user.id));
+    const myReports = state.data.reports.filter(r => Number(r.employee_id) === Number(state.user.id));
+
     return `<div class="crm-shell">${crmHeader('CRM - Employee')}
         <main class="crm-main">
-            <section class="stats">${stat('My Customers', '12')}${stat('Upcoming Meetings', '2')}${stat('Reports Submitted', '8')}</section>
+            <section class="stats">
+                ${stat('My Customers', myClients.length)}
+                ${stat('Upcoming Meetings', myMeetings.length)}
+                ${stat('Reports Submitted', myReports.length)}
+            </section>
             <div class="two-col">
-                <section class="section-card"><h2>Upcoming Scheduled Meetings</h2>${state.data.scheduledMeetings.slice(0, 2).map(m => `<div class="meeting-item"><h3>${m.client_name}</h3><p>${dateTime(m.meeting_at)}</p><p>${m.purpose}</p></div>`).join('')}</section>
+                <section class="section-card">
+                    <h2>Upcoming Scheduled Meetings</h2>
+                    ${myMeetings.length ? myMeetings.map(m => `<div class="meeting-item"><h3>${m.client_name}</h3><p>${dateTime(m.meeting_at)}</p><p>${m.purpose}</p></div>`).join('') : '<p>No upcoming meetings.</p>'}
+                </section>
                 <section class="section-card"><h2>Consultation Requests</h2>${consultationNotice()}</section>
             </div>
-            <section class="section-card" style="margin-top:24px"><h2>My Customer Profiles</h2><div class="customer-grid">${state.data.clients.slice(0, 2).map(clientButton).join('')}</div></section>
+            <section class="section-card" style="margin-top:24px">
+                <h2>My Customer Profiles</h2>
+                <div class="customer-grid">
+                    ${myClients.length ? myClients.map(clientButton).join('') : '<p>No customers assigned yet.</p>'}
+                </div>
+            </section>
         </main></div>`;
 }
 
 function consultationNotice() {
-    const client = state.data.clients.find(c => c.consultations && c.consultations.length);
+    const myClients = state.data.clients.filter(c => Number(c.assigned_employee_id) === Number(state.user.id));
+    const client = myClients.find(c => c.consultations && c.consultations.length);
     if (!client) return '<p>No pending consultation requests.</p>';
     const req = client.consultations[0];
     return `<div class="notice"><strong>${client.name} - ${client.organization}</strong><p>Requested: ${req.requested_slot}</p><p>Topic: ${req.topic}</p><p>Notification will appear when you open this customer's profile</p></div>`;
@@ -346,7 +363,12 @@ function modal(content) { document.getElementById('modal-root').innerHTML = `<di
 function closeModal() { const root = document.getElementById('modal-root'); root.classList.remove('show'); root.innerHTML = ''; }
 
 function openConsultations() {
-    modal(`<h1>Consultations</h1><h2>Watch Our Services Demo</h2><div class="video-box" style="background:#000; color:#fff; cursor:pointer" onclick="alert('Video player would initialize here with production API.')"><div>${icon('video')}<strong>Play ISEET Overview</strong><p>Click to start the demonstration</p></div></div><h2>Request a Consultation</h2><p><strong>Available Consultation Times:</strong></p><p>Our managers are available for consultations at the following times</p><form id="consultForm"><label>Your Name</label><input name="name" required placeholder="Full Name"><label>Email Address</label><input name="email" type="email" required placeholder="email@example.com"><label>Preferred Slot</label><select name="slot">${state.data.availableSlots.map(s => `<option>${s}</option>`).join('')}</select><label>Topic</label><input name="topic" value="Enterprise Digital Transformation"><button class="btn" style="width:100%;margin-top:18px">Request Consultation</button><div class="success" id="consultSuccess"></div></form>`);
+    modal(`<h1>Consultations</h1><h2>Watch Our Services Demo</h2><div class="video-container" style="margin: 18px 0 28px; border-radius: 10px; overflow: hidden; background: #000; box-shadow: var(--shadow);">
+        <video controls style="width: 100%; display: block; max-height: 400px;">
+            <source src="/videos/welcome.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+    </div><h2>Request a Consultation</h2><p><strong>Available Consultation Times:</strong></p><p>Our managers are available for consultations at the following times</p><form id="consultForm"><label>Your Name</label><input name="name" required placeholder="Full Name"><label>Email Address</label><input name="email" type="email" required placeholder="email@example.com"><label>Preferred Slot</label><select name="slot">${state.data.availableSlots.map(s => `<option>${s}</option>`).join('')}</select><label>Topic</label><input name="topic" value="Enterprise Digital Transformation"><button class="btn" style="width:100%;margin-top:18px">Request Consultation</button><div class="success" id="consultSuccess"></div></form>`);
 }
 
 function openEmail() {
