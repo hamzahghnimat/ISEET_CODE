@@ -6,6 +6,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 
 class CrmController extends Controller
@@ -24,7 +25,7 @@ class CrmController extends Controller
             'reports' => $this->reports(),
             'scheduledMeetings' => $this->scheduledMeetings(),
             'forecast' => $this->forecast(),
-            'availableSlots' => ['Monday: 5:00 PM', 'Wednesday: 3:00 PM', 'Friday: 4:00 PM'],
+            'availableSlots' => Cache::get('available_slots', ['Monday: 5:00 PM', 'Wednesday: 3:00 PM', 'Friday: 4:00 PM']),
         ]);
     }
 
@@ -201,6 +202,17 @@ class CrmController extends Controller
         ]);
 
         return response()->json(['jobs' => DB::table('job_opportunities')->where('is_active', true)->latest()->get()]);
+    }
+
+    public function addAvailableSlot(Request $request): JsonResponse
+    {
+        $data = $request->validate(['slot' => ['required', 'string', 'max:100']]);
+        $slots = Cache::get('available_slots', ['Monday: 5:00 PM', 'Wednesday: 3:00 PM', 'Friday: 4:00 PM']);
+        if (!in_array($data['slot'], $slots)) {
+            $slots[] = $data['slot'];
+            Cache::put('available_slots', $slots);
+        }
+        return response()->json(['availableSlots' => $slots]);
     }
 
     private function clients()

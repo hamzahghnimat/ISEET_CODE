@@ -203,7 +203,7 @@ function profile() {
 
 function managerDashboard() {
     const content = state.crmTab === 'reports' ? reportsTab() : state.crmTab === 'schedule' ? scheduleTab() : state.crmTab === 'projects' ? projectsTab() : customersTab();
-    return `<div class="crm-shell">${crmHeader('CRM - Manager', `<button class="btn" onclick="go('forecast')">AI Sales Forecast</button>`)}
+    return `<div class="crm-shell">${crmHeader('CRM - Manager', `<button class="btn" onclick="openAddJobModal()">Add Job Opening</button><button class="btn" onclick="go('forecast')">AI Sales Forecast</button>`)}
         <main class="crm-main">
             <section class="stats">${stat('Total Customers', '156')}${stat('New Reports', '24')}${stat('Scheduled Meetings', '12')}${stat('Active Projects', '18')}</section>
             <div class="tabs">${tab('customers', 'Customers')}${tab('reports', 'Reports')}${tab('schedule', 'Schedule Meetings')}${tab('projects', 'Projects')}</div>
@@ -236,11 +236,8 @@ function scheduleTab() {
         ${state.data.scheduledMeetings.map(m => `<article class="meeting-item"><h3>${m.organization} - ${m.client_name}</h3><p>${dateTime(m.meeting_at)}</p><span class="pill">${m.status}</span></article>`).join('')}
         <h3>New Meeting</h3>
         <div class="two-col">
-            <select id="meeting_client"><option>Choose customer...</option>${state.data.clients.map(c => `<option value="${c.id}">${c.name} - ${c.organization}</option>`).join('')}</select>
             <input type="date" id="meeting_date">
             <input type="time" id="meeting_time">
-            <input placeholder="Purpose" id="meeting_purpose">
-            <select id="meeting_employee"><option value="2">Alice Brown</option><option value="3">Bob Wilson</option></select>
         </div>
         <button class="btn" style="margin-top:18px; width:100%" onclick="scheduleMeeting()">Schedule Meeting</button>
     </section>`;
@@ -392,6 +389,40 @@ function openMeetings() {
     modal(`<h2>All Meetings - History</h2><div style="max-height:400px;overflow:auto;margin-bottom:24px">${c.meetings.map(m => `<article class="timeline-card" style="margin-bottom:12px"><h3>${dateTime(m.meeting_at)}</h3><p>Duration: ${m.duration}</p><p>${m.notes}</p></article>`).join('')}</div><form id="noteForm"><label>Add Meeting Note</label><textarea name="notes" required></textarea><button class="btn" style="width:100%;margin-top:12px">Save and Sync</button><div class="success" id="noteSuccess"></div></form>`);
 }
 
+function openAddJobModal() {
+    modal(`<h2>Add Job Opening</h2>
+    <p class="subtitle">Create a new job opportunity to be posted in the Job Opportunities section.</p>
+    <form id="addJobForm">
+        <label>Job Title *</label>
+        <input name="title" required placeholder="e.g. Senior Product Manager">
+        <label>Department *</label>
+        <input name="department" required placeholder="e.g. Product & Design">
+        <div class="two-col">
+            <div>
+                <label>Employment Type *</label>
+                <select name="employment_type" required>
+                    <option value="Full-time">Full-time</option>
+                    <option value="Part-time">Part-time</option>
+                    <option value="Contract">Contract</option>
+                    <option value="Internship">Internship</option>
+                </select>
+            </div>
+            <div>
+                <label>Work Mode *</label>
+                <select name="work_mode" required>
+                    <option value="Remote">Remote</option>
+                    <option value="Hybrid">Hybrid</option>
+                    <option value="On-site">On-site</option>
+                </select>
+            </div>
+        </div>
+        <label>Description *</label>
+        <textarea name="description" required placeholder="Describe the responsibilities and requirements..." rows="4"></textarea>
+        <button class="btn" style="width:100%;margin-top:18px">Post Job Opening</button>
+        <div class="success" id="addJobSuccess"></div>
+    </form>`);
+}
+
 function bindModalForms() {
     const consultForm = document.getElementById('consultForm');
     if (consultForm) consultForm.addEventListener('submit', async e => {
@@ -417,10 +448,54 @@ function bindModalForms() {
         state.selectedClient = state.data.clients.find(c => Number(c.id) === Number(state.selectedClient.id));
         openMeetings();
     });
+    const addJobForm = document.getElementById('addJobForm');
+    if (addJobForm) addJobForm.addEventListener('submit', async e => {
+        e.preventDefault();
+        try {
+            const payload = Object.fromEntries(new FormData(addJobForm));
+            const result = await api('/api/jobs', { method: 'POST', body: JSON.stringify(payload) });
+            state.data.jobs = result.jobs;
+            document.getElementById('addJobSuccess').textContent = 'Job opening successfully posted!';
+            document.getElementById('addJobSuccess').classList.add('show');
+            addJobForm.reset();
+            setTimeout(() => {
+                closeModal();
+            }, 1500);
+        } catch (err) {
+            alert(err.message);
+        }
+    });
 }
 
-function scheduleMeeting() {
-    alert('Meeting schedule request sent to employee. Calendar sync in progress.');
+async function scheduleMeeting() {
+    const dateInput = document.getElementById('meeting_date').value;
+    const timeInput = document.getElementById('meeting_time').value;
+
+    if (!dateInput || !timeInput) {
+        return alert('Please select both a date and a time.');
+    }
+
+    const localDate = new Date(dateInput + 'T00:00:00');
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const dayName = days[localDate.getDay()];
+
+    let [hours, minutes] = timeInput.split(':');
+    hours = parseInt(hours, 10);
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12 || 12;
+    const slot = `${dayName}: ${hours}:${minutes} ${ampm}`;
+
+    try {
+        const result = await api('/api/available-slots', {
+            method: 'POST',
+            body: JSON.stringify({ slot })
+        });
+        state.data.availableSlots = result.availableSlots;
+        render();
+        alert('Slot added to available consultation times successfully!');
+    } catch (err) {
+        alert('Error adding slot.');
+    }
 }
 
 
@@ -445,3 +520,4 @@ window.openLocation = openLocation;
 window.openMeetings = openMeetings;
 window.render = render;
 window.switchTab = switchTab;
+window.openAddJobModal = openAddJobModal;

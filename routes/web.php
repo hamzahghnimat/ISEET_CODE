@@ -24,5 +24,6 @@ Route::prefix('api')->group(function () {
     Route::post('/clients/{client}/meetings', [CrmController::class, 'addMeetingNote']);
     Route::post('/projects', [CrmController::class, 'addProject']);
     Route::post('/jobs', [CrmController::class, 'addJob']);
+    Route::post('/available-slots', [CrmController::class, 'addAvailableSlot']);
 });
 
