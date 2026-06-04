@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class CrmController extends Controller
@@ -62,12 +64,17 @@ class CrmController extends Controller
             'country' => ['required', 'string', 'max:120'],
             'email' => ['required', 'email', 'max:160'],
             'phone' => ['required', 'regex:/^[0-9+()\\-\\s]+$/', 'max:40'],
+            'location' => ['nullable', 'string', 'max:1000'],
         ]);
+
+        $insertData = $data;
+        if (empty($insertData['location'])) {
+            $insertData['location'] = $data['country'];
+        }
 
         $clientId = DB::table('clients')->updateOrInsert(
             ['email' => $data['email']],
-            $data + [
-                'location' => $data['country'],
+            $insertData + [
                 'engagement_level' => 'New',
                 'assigned_employee_id' => 2,
                 'last_contact_at' => now()->toDateString(),
@@ -123,8 +130,29 @@ class CrmController extends Controller
             'updated_at' => now(),
         ]);
 
+        $clientRecord = DB::table('clients')->where('id', $client)->first();
+        $mailError = null;
+
+        if ($clientRecord) {
+            try {
+                Mail::raw($data['message'], function ($message) use ($clientRecord) {
+                    $message->to($clientRecord->email)
+                            ->subject('Message from ISEET CRM');
+                });
+            } catch (\Exception $e) {
+                Log::error('SMTP Mail send failed: ' . $e->getMessage());
+                $mailError = 'Email delivery failed: ' . $e->getMessage();
+            }
+        }
+
+        $messageText = 'Message logged and sent to client.';
+        if ($mailError) {
+            $messageText = 'Message logged in database, but ' . $mailError;
+        }
+
         return response()->json([
-            'message' => 'Message logged and queued for email delivery.',
+            'message' => $messageText,
+            'mail_error' => $mailError,
             'communications' => DB::table('communications')->where('client_id', $client)->orderBy('sent_at')->get(),
         ]);
     }

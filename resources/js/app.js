@@ -107,6 +107,7 @@ function talk() {
                 <label>Organization *</label><input name="organization" required>
                 <label>Sector *</label><select name="sector" required><option value="">Select sector</option>${sectors.map(x => `<option>${x}</option>`).join('')}</select>
                 <label>Country *</label><select name="country" required><option value="">Select country</option>${countries.map(x => `<option>${x}</option>`).join('')}</select>
+                <label>Location (Google Maps URL)</label><input name="location" placeholder="e.g. https://maps.app.goo.gl/..." type="text">
                 <label>Email Address *</label><input name="email" type="email" required><div class="hint">Must contain the @ symbol</div>
                 <label>Phone Number *</label><input name="phone" pattern="[0-9+()\\-\\s]+" required><div class="hint">Numbers only (symbols like +, -, () are allowed)</div>
                 <button class="btn" style="width:100%;margin-top:24px">Submit to CRM System</button>
@@ -381,7 +382,20 @@ function openConsultationDetails() {
 
 function openLocation() {
     const c = state.selectedClient;
-    modal(`<h2>Location</h2><div class="map-box"><div>${icon('map')}<h3>${c.location || c.country}</h3><p>Google Maps integration target</p></div></div>`);
+    const isUrl = c.location && (c.location.startsWith('http://') || c.location.startsWith('https://'));
+    const mapUrl = isUrl ? c.location : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(c.location || c.country)}`;
+
+    modal(`<h2>Location</h2>
+        <div class="map-box" style="text-align:center; padding:24px 16px;">
+            <div style="margin-bottom:16px;">${icon('map')}</div>
+            <h3 style="margin-bottom:8px;">${c.location || c.country}</h3>
+            <p style="color:var(--text-muted); margin-bottom:20px; font-size:0.9rem;">
+                ${isUrl ? 'Stored Google Maps Location' : 'Google Maps Search Target'}
+            </p>
+            <a href="${mapUrl}" target="_blank" rel="noopener noreferrer" class="btn" style="display:inline-block; text-decoration:none; padding:10px 24px;">
+                Open in Google Maps
+            </a>
+        </div>`);
 }
 
 function openMeetings() {
