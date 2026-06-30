@@ -10,9 +10,11 @@ ISEET CRM is a full-featured Customer Relationship Management system built to st
 
 ### 1. Client Portal Login
 Secure and intuitive access for clients to view their ongoing consultations, projects, and communications.
+![Client Portal](screenshots/client-portal-login.png)
 
 ### 2. Employee Dashboard
 A centralized hub for employees to track tasks, manage leads, and handle daily operations efficiently.
+![Employee Dashboard](screenshots/employee-dashboard.png)
 
 ### 3. Manager Dashboard (with AI Forecasting)
 Advanced insights for management, featuring AI-driven sales forecasting and comprehensive revenue analytics.
@@ -24,6 +26,7 @@ Seamless scheduling for consultations and meetings directly through the platform
 
 ### 5. Admin Approval Screen
 Robust administrative controls for approving new accounts, projects, and critical system changes.
+![Admin Approval](screenshots/admin-approval.png)
 
 ---
 
@@ -73,3 +76,4 @@ Robust administrative controls for approving new accounts, projects, and critica
 The application will be available at `http://localhost:8000`.
 
 ---
+*Note: Make sure to place the newly taken screenshots into the `screenshots/` directory with the names referenced above (e.g., `client-portal-login.png`, `employee-dashboard.png`, `admin-approval.png`).*
